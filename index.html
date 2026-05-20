@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Control de Turnos — Enel</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f5f4f0;--surface:#ffffff;--surface2:#f0efe9;
+  --border:#e0ddd5;--border2:#cccac0;--text:#1a1a18;--muted:#6b6960;
+  --green:#00A651;--green-bg:#e8f5ee;--green-text:#005c2e;
+  --amber-bg:#fdf3e0;--amber-text:#7a4a00;
+  --blue-bg:#e6f0fb;--blue-text:#1a4a7a;--red:#d94040;
+}
+body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:14px;line-height:1.5}
+.app{max-width:980px;margin:0 auto;padding:2rem 1.25rem}
+.header{display:flex;align-items:center;gap:14px;margin-bottom:2rem;padding-bottom:1.5rem;border-bottom:1px solid var(--border)}
+.logo{width:48px;height:48px;background:var(--green);border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.logo svg{width:26px;height:26px;fill:white}
+.header-text h1{font-size:20px;font-weight:600;letter-spacing:-0.3px}
+.header-text p{font-size:13px;color:var(--muted);margin-top:2px}
+.tabs{display:flex;gap:2px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:4px;margin-bottom:1.5rem}
+.tab{flex:1;padding:9px 8px;font-size:13px;font-family:'IBM Plex Sans',sans-serif;font-weight:500;border:none;background:transparent;cursor:pointer;border-radius:7px;color:var(--muted);transition:all 0.15s;display:flex;align-items:center;justify-content:center;gap:5px}
+.tab:hover{color:var(--text);background:rgba(0,0,0,0.04)}
+.tab.active{background:var(--surface);color:var(--text);border:1px solid var(--border);box-shadow:0 1px 3px rgba(0,0,0,0.06)}
+.tab svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1.5rem;margin-bottom:1rem}
+.card-title{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:1.25rem}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+.form-grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px}
+.form-group{display:flex;flex-direction:column;gap:5px}
+.form-group label{font-size:12px;font-weight:500;color:var(--muted)}
+.form-group input,.form-group select{padding:9px 11px;font-size:13px;font-family:'IBM Plex Sans',sans-serif;border:1px solid var(--border2);border-radius:8px;background:var(--surface);color:var(--text);outline:none;transition:border-color 0.15s;width:100%}
+.form-group input:focus,.form-group select:focus{border-color:var(--green)}
+.boleta-box{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:12px}
+.boleta-box-header{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--border)}
+.boleta-icon{width:32px;height:32px;background:var(--surface);border:1px solid var(--border2);border-radius:6px;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;color:var(--text);flex-shrink:0}
+.toggle-row{display:flex;align-items:center;gap:10px;margin-bottom:12px;font-size:13px}
+.toggle{position:relative;width:38px;height:21px;flex-shrink:0}
+.toggle input{opacity:0;width:0;height:0;position:absolute}
+.slider{position:absolute;inset:0;background:var(--border2);border-radius:21px;cursor:pointer;transition:background 0.2s}
+.slider:before{content:"";position:absolute;width:15px;height:15px;left:3px;top:3px;background:white;border-radius:50%;transition:transform 0.2s;box-shadow:0 1px 3px rgba(0,0,0,0.15)}
+input:checked+.slider{background:var(--green)}
+input:checked+.slider:before{transform:translateX(17px)}
+.extras-panel{background:var(--amber-bg);border:1px solid #e8d5a0;border-radius:10px;padding:14px;margin-bottom:12px}
+.extras-panel .card-title{color:#9a6800;margin-bottom:10px}
+.valor-hora-box{background:#eef6ff;border:1px solid #b8d4f0;border-radius:10px;padding:14px;margin-bottom:12px}
+.valor-hora-box .card-title{color:#1a4a7a;margin-bottom:10px}
+.tarifa-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+.tarifa-item{background:white;border:1px solid var(--border);border-radius:8px;padding:10px 12px;display:flex;align-items:center;justify-content:space-between;gap:8px}
+.tarifa-label{font-size:12px;color:var(--muted);font-weight:500}
+.tarifa-value{font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:var(--blue-text)}
+.btn-save{background:var(--green);color:white;border:none;padding:11px 20px;border-radius:8px;font-size:14px;font-weight:600;font-family:'IBM Plex Sans',sans-serif;cursor:pointer;width:100%;transition:background 0.15s;display:flex;align-items:center;justify-content:center;gap:6px}
+.btn-save:hover{background:#008a44}
+.btn-del{background:transparent;color:var(--red);border:1px solid #f0b0b0;padding:4px 9px;border-radius:6px;font-size:11px;font-family:'IBM Plex Sans',sans-serif;cursor:pointer;white-space:nowrap}
+.btn-del:hover{background:#fff0f0}
+.nav-btn{background:var(--surface);border:1px solid var(--border2);border-radius:7px;padding:6px 12px;cursor:pointer;font-size:13px;font-family:'IBM Plex Sans',sans-serif;color:var(--text);transition:background 0.1s}
+.nav-btn:hover{background:var(--surface2)}
+.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:1rem}
+.metric{background:var(--surface2);border-radius:10px;padding:14px}
+.metric-label{font-size:11px;color:var(--muted);margin-bottom:5px;font-weight:500}
+.metric-value{font-size:18px;font-weight:600;font-family:'IBM Plex Mono',monospace}
+.metric-value.green{color:var(--green)}
+.metric-value.amber{color:#b07000}
+.metric-value.blue{color:#1a4a7a}
+.section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;padding:8px 10px;font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;border-bottom:1px solid var(--border)}
+td{padding:9px 10px;border-bottom:1px solid var(--border);vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:var(--surface2)}
+.badge{display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:500;white-space:nowrap}
+.b-green{background:var(--green-bg);color:var(--green-text)}
+.b-amber{background:var(--amber-bg);color:var(--amber-text)}
+.b-blue{background:var(--blue-bg);color:var(--blue-text)}
+.b-gray{background:var(--surface2);color:var(--muted);border:1px solid var(--border2)}
+.boleta-num{display:inline-flex;align-items:center;gap:4px;font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:500;background:var(--surface2);border:1px solid var(--border2);border-radius:5px;padding:2px 7px;color:var(--text)}
+.panel{display:none}
+.panel.active{display:block}
+.day-group{margin-bottom:1rem}
+.day-label{font-size:12px;font-weight:600;color:var(--muted);padding:6px 0;border-bottom:1px solid var(--border);margin-bottom:8px;display:flex;justify-content:space-between}
+.week-summary{background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:10px 14px;font-size:13px;display:flex;justify-content:space-between;align-items:center;margin-top:12px;font-weight:500}
+.cal-grid-header{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:4px}
+.cal-grid-header span{font-size:11px;text-align:center;color:var(--muted);font-weight:600}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.cal-day{aspect-ratio:1;border-radius:8px;border:1px solid var(--border);background:var(--surface2);display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:12px;font-weight:500}
+.cal-day.has-shift{background:var(--green-bg);border-color:#7dcca0;color:var(--green-text)}
+.cal-day.has-extras{background:var(--amber-bg);border-color:#d4aa50;color:var(--amber-text)}
+.cal-day.empty{opacity:0;border:none;background:transparent}
+.empty-state{text-align:center;padding:2rem 1rem;color:var(--muted);font-size:13px}
+.info-tarifas{background:#f9f7f2;border:1px solid #e8e0cc;border-radius:10px;padding:14px;margin-bottom:0}
+.info-tarifas p{font-size:12px;color:var(--muted);display:flex;gap:20px;flex-wrap:wrap}
+.toast{position:fixed;top:1.5rem;right:1.5rem;background:var(--green);color:white;padding:12px 18px;border-radius:10px;font-size:13px;font-weight:500;box-shadow:0 4px 16px rgba(0,0,0,0.15);z-index:999;transform:translateY(-10px);opacity:0;transition:all 0.25s;pointer-events:none}
+.toast.show{transform:translateY(0);opacity:1}
+@media(max-width:640px){.metrics{grid-template-columns:repeat(2,1fr)}.form-grid{grid-template-columns:1fr}.form-grid-3{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="header">
+    <div class="logo">
+      <svg viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+    </div>
+    <div class="header-text">
+      <h1>Control de Turnos — Enel</h1>
+      <p>Registro de jornadas, horas extras y boletas de honorarios electrónicas</p>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('registrar')">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      Registrar turno
+    </button>
+    <button class="tab" onclick="switchTab('dia')">
+      <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      Por día
+    </button>
+    <button class="tab" onclick="switchTab('semana')">
+      <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="3" y1="15" x2="21" y2="15"/></svg>
+      Por semana
+    </button>
+    <button class="tab" onclick="switchTab('mes')">
+      <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      Por mes
+    </button>
+  </div>
+
+  <!-- ===== REGISTRAR ===== -->
+  <div id="panel-registrar" class="panel active">
+
+    <!-- Tarifas configurables -->
+    <div class="card">
+      <div class="card-title">⚙️ Configuración de tarifas (editable)</div>
+      <div class="form-grid" style="margin-bottom:8px">
+        <div class="form-group">
+          <label>Valor hora normal ($)</label>
+          <input type="number" id="cfg-normal" value="3000" min="0" step="100" onchange="actualizarMetricas()">
+        </div>
+        <div class="form-group">
+          <label>Valor hora extra ($)</label>
+          <input type="number" id="cfg-extra-manual" value="0" min="0" step="100" onchange="actualizarMetricas()" placeholder="Ingresa manualmente">
+        </div>
+      </div>
+      <div class="tarifa-row">
+        <div class="tarifa-item">
+          <span class="tarifa-label">Hora normal</span>
+          <span class="tarifa-value" id="disp-normal">$3.000</span>
+        </div>
+        <div class="tarifa-item">
+          <span class="tarifa-label">Hora extra efectiva</span>
+          <span class="tarifa-value" id="disp-extra">$4.500</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Formulario turno -->
+    <div class="card">
+      <div class="card-title">Nuevo turno</div>
+
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Fecha</label>
+          <input type="date" id="f-fecha">
+        </div>
+        <div class="form-group">
+          <label>Tipo de turno</label>
+          <select id="f-tipo">
+            <option value="mañana">Mañana</option>
+            <option value="tarde">Tarde</option>
+            <option value="noche">Noche</option>
+            <option value="otro">Otro</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Hora de entrada</label>
+          <input type="time" id="f-entrada">
+        </div>
+        <div class="form-group">
+          <label>Hora de salida</label>
+          <input type="time" id="f-salida">
+        </div>
+      </div>
+
+      <!-- Boleta honorarios -->
+      <div class="boleta-box">
+        <div class="boleta-box-header">
+          <div class="boleta-icon">N°</div>
+          Boleta de Honorarios Electrónica
+        </div>
+        <div class="form-grid" style="margin-bottom:0">
+          <div class="form-group">
+            <label>Número de boleta</label>
+            <input type="number" id="f-boleta" placeholder="Ej: 1492" min="1">
+          </div>
+          <div class="form-group">
+            <label>Estado boleta</label>
+            <select id="f-boleta-estado">
+              <option value="emitida">Emitida</option>
+              <option value="pendiente">Pendiente</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Horas extras -->
+      <div class="toggle-row">
+        <label class="toggle">
+          <input type="checkbox" id="f-extras-check" onchange="toggleExtras()">
+          <span class="slider"></span>
+        </label>
+        <span>Realicé horas extras</span>
+      </div>
+
+      <div id="extras-panel" style="display:none">
+        <div class="extras-panel">
+          <div class="card-title">Horas extras</div>
+          <div class="form-grid-3" style="margin-bottom:0">
+            <div class="form-group">
+              <label>Cantidad de horas</label>
+              <input type="number" id="f-extras-horas" min="0.5" max="24" step="0.5" value="1" onchange="calcularPreviewExtra()">
+            </div>
+            <div class="form-group">
+              <label>Tipo</label>
+              <select id="f-extras-tipo">
+                <option value="normal">Normal</option>
+                <option value="nocturna">Nocturna</option>
+                <option value="festivo">Festivo / Feriado</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Valor hora extra ($)</label>
+              <input type="number" id="f-extras-valor" min="0" step="100" placeholder="Auto desde config" onchange="calcularPreviewExtra()">
+            </div>
+          </div>
+          <div id="preview-extra" style="margin-top:8px;font-size:12px;color:var(--amber-text);font-weight:500"></div>
+        </div>
+      </div>
+
+      <div class="form-group" style="margin-bottom:12px">
+        <label>Notas (opcional)</label>
+        <input type="text" id="f-notas" placeholder="Ej: Área sur, reemplazo, guardia nocturna...">
+      </div>
+
+      <button class="btn-save" onclick="guardarTurno()">
+        <svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:none;stroke:white;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round"><polyline points="20 6 9 17 4 12"/></svg>
+        Guardar turno
+      </button>
+    </div>
+
+    <!-- Resumen general -->
+    <div class="card">
+      <div class="card-title">Resumen general</div>
+      <div class="metrics">
+        <div class="metric"><div class="metric-label">Total turnos</div><div class="metric-value" id="m-total">0</div></div>
+        <div class="metric"><div class="metric-label">Horas normales</div><div class="metric-value green" id="m-hnorm">0h</div></div>
+        <div class="metric"><div class="metric-label">Horas extras</div><div class="metric-value amber" id="m-hext">0h</div></div>
+        <div class="metric"><div class="metric-label">Total devengado</div><div class="metric-value blue" id="m-total-pesos">$0</div></div>
+      </div>
+      <div class="metrics">
+        <div class="metric"><div class="metric-label">Este mes — turnos</div><div class="metric-value" id="m-mes-turnos">0</div></div>
+        <div class="metric"><div class="metric-label">Este mes — monto</div><div class="metric-value blue" id="m-mes-monto">$0</div></div>
+        <div class="metric"><div class="metric-label">Boletas emitidas</div><div class="metric-value green" id="m-boletas">0</div></div>
+        <div class="metric"><div class="metric-label">Boletas pendientes</div><div class="metric-value amber" id="m-pendientes">0</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== DÍA ===== -->
+  <div id="panel-dia" class="panel">
+    <div class="card">
+      <div class="section-header">
+        <div class="card-title" style="margin-bottom:0">Vista por día</div>
+        <input type="date" id="filtro-dia" style="font-size:13px;padding:7px 10px;border:1px solid var(--border2);border-radius:8px;background:var(--surface);color:var(--text);font-family:'IBM Plex Sans',sans-serif;outline:none">
+      </div>
+      <div id="vista-dia"></div>
+    </div>
+  </div>
+
+  <!-- ===== SEMANA ===== -->
+  <div id="panel-semana" class="panel">
+    <div class="card">
+      <div class="section-header">
+        <div class="card-title" style="margin-bottom:0">Vista semanal</div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <button class="nav-btn" onclick="cambiarSemana(-1)">‹ Anterior</button>
+          <span id="label-semana" style="font-size:13px;font-weight:500;min-width:200px;text-align:center"></span>
+          <button class="nav-btn" onclick="cambiarSemana(1)">Siguiente ›</button>
+        </div>
+      </div>
+      <div id="vista-semana"></div>
+    </div>
+  </div>
+
+  <!-- ===== MES ===== -->
+  <div id="panel-mes" class="panel">
+    <div class="card">
+      <div class="section-header">
+        <div class="card-title" style="margin-bottom:0">Vista mensual</div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <button class="nav-btn" onclick="cambiarMes(-1)">‹</button>
+          <span id="label-mes" style="font-size:13px;font-weight:500;min-width:130px;text-align:center"></span>
+          <button class="nav-btn" onclick="cambiarMes(1)">›</button>
+        </div>
+      </div>
+      <div id="vista-mes"></div>
+    </div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const DIAS = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+
+let turnos = JSON.parse(localStorage.getItem('enel_turnos_v2') || '[]');
+let semanaOffset = 0;
+let mesOffset = 0;
+
+function guardarLS() { localStorage.setItem('enel_turnos_v2', JSON.stringify(turnos)); }
+
+function pesos(n) { return '$' + Math.round(n).toLocaleString('es-CL'); }
+
+function getCfg() {
+  const normal = parseFloat(document.getElementById('cfg-normal').value) || 3000;
+  const extra = parseFloat(document.getElementById('cfg-extra-manual').value) || 0;
+  return { normal, extra };
+}
+
+function actualizarDisplayTarifas() {
+  const c = getCfg();
+  document.getElementById('disp-normal').textContent = pesos(c.normal);
+  document.getElementById('disp-extra').textContent = pesos(c.extra);
+}
+
+function calcularPreviewExtra() {
+  const horas = parseFloat(document.getElementById('f-extras-horas').value) || 0;
+  const valorManual = parseFloat(document.getElementById('f-extras-valor').value);
+  const cfg = getCfg();
+  const valorEfectivo = valorManual > 0 ? valorManual : cfg.extra;
+  const total = horas * valorEfectivo;
+  document.getElementById('preview-extra').textContent = horas > 0
+    ? `→ ${horas}h × ${pesos(valorEfectivo)} = ${pesos(total)}`
+    : '';
+}
+
+function calcHoras(entrada, salida) {
+  if (!entrada || !salida) return 4;
+  const [eh, em] = entrada.split(':').map(Number);
+  const [sh, sm] = salida.split(':').map(Number);
+  let mins = (sh * 60 + sm) - (eh * 60 + em);
+  if (mins <= 0) mins += 1440;
+  return Math.round(mins / 60 * 10) / 10;
+}
+
+function calcMonto(turno) {
+  const cfg = getCfg();
+  const normal = (turno.horas || 4) * cfg.normal;
+  let extra = 0;
+  if (turno.extras > 0) {
+    const vExtra = turno.valorExtra > 0 ? turno.valorExtra : cfg.extra;
+    extra = turno.extras * vExtra;
+  }
+  return normal + extra;
+}
+
+function guardarTurno() {
+  const fecha = document.getElementById('f-fecha').value;
+  const entrada = document.getElementById('f-entrada').value;
+  if (!fecha || !entrada) { showToast('⚠️ Ingresa la fecha y hora de entrada.', true); return; }
+  const salida = document.getElementById('f-salida').value;
+  const horas = calcHoras(entrada, salida);
+  const conExtras = document.getElementById('f-extras-check').checked;
+  const extrasHoras = conExtras ? (parseFloat(document.getElementById('f-extras-horas').value) || 0) : 0;
+  const valorExtraManual = conExtras ? (parseFloat(document.getElementById('f-extras-valor').value) || 0) : 0;
+  const boletaNum = document.getElementById('f-boleta').value;
+
+  const turno = {
+    id: Date.now(),
+    fecha, entrada, salida, horas,
+    tipo: document.getElementById('f-tipo').value,
+    extras: extrasHoras,
+    tipoExtras: conExtras ? document.getElementById('f-extras-tipo').value : '',
+    valorExtra: valorExtraManual,
+    boleta: boletaNum ? parseInt(boletaNum) : null,
+    boletaEstado: document.getElementById('f-boleta-estado').value,
+    notas: document.getElementById('f-notas').value
+  };
+
+  turnos.push(turno);
+  turnos.sort((a, b) => a.fecha.localeCompare(b.fecha));
+  guardarLS();
+  actualizarMetricas();
+
+  // Reset
+  document.getElementById('f-extras-check').checked = false;
+  document.getElementById('f-notas').value = '';
+  document.getElementById('f-salida').value = '';
+  document.getElementById('f-boleta').value = '';
+  document.getElementById('f-extras-valor').value = '';
+  document.getElementById('f-extras-horas').value = '1';
+  document.getElementById('preview-extra').textContent = '';
+  toggleExtras();
+  showToast('✅ Turno guardado correctamente.');
+}
+
+function eliminarTurno(id) {
+  if (!confirm('¿Eliminar este turno?')) return;
+  turnos = turnos.filter(t => t.id !== id);
+  guardarLS(); actualizarMetricas(); renderAll();
+}
+
+function toggleExtras() {
+  document.getElementById('extras-panel').style.display =
+    document.getElementById('f-extras-check').checked ? 'block' : 'none';
+  calcularPreviewExtra();
+}
+
+function actualizarMetricas() {
+  actualizarDisplayTarifas();
+  const hoy = new Date();
+  const mesKey = `${hoy.getFullYear()}-${String(hoy.getMonth()+1).padStart(2,'0')}`;
+  const delMes = turnos.filter(t => t.fecha.startsWith(mesKey));
+
+  document.getElementById('m-total').textContent = turnos.length;
+  document.getElementById('m-hnorm').textContent = turnos.reduce((s,t) => s+(t.horas||4), 0).toFixed(1) + 'h';
+  document.getElementById('m-hext').textContent = turnos.reduce((s,t) => s+(t.extras||0), 0) + 'h';
+  document.getElementById('m-total-pesos').textContent = pesos(turnos.reduce((s,t) => s+calcMonto(t), 0));
+  document.getElementById('m-mes-turnos').textContent = delMes.length + ' turnos';
+  document.getElementById('m-mes-monto').textContent = pesos(delMes.reduce((s,t) => s+calcMonto(t), 0));
+  document.getElementById('m-boletas').textContent = turnos.filter(t => t.boleta && t.boletaEstado === 'emitida').length;
+  document.getElementById('m-pendientes').textContent = turnos.filter(t => t.boletaEstado === 'pendiente').length;
+}
+
+function badgeTipo(tipo) {
+  const m = { mañana:'b-blue', tarde:'b-amber', noche:'b-green', otro:'b-gray' };
+  return `<span class="badge ${m[tipo]||'b-gray'}">${tipo}</span>`;
+}
+
+function badgeBoleta(t) {
+  if (!t.boleta) return '<span style="color:var(--muted);font-size:11px">—</span>';
+  const cls = t.boletaEstado === 'pendiente' ? 'b-amber' : 'b-green';
+  return `<span class="badge ${cls}" title="N° ${t.boleta} — ${t.boletaEstado}">N° ${t.boleta}</span>`;
+}
+
+function filaTabla(t) {
+  const cfg = getCfg();
+  const valorExt = t.valorExtra > 0 ? t.valorExtra : cfg.extra;
+  const montoNorm = pesos((t.horas||4) * cfg.normal);
+  const montoExtra = t.extras > 0 ? ` +${pesos(t.extras * valorExt)}` : '';
+  return `<tr>
+    <td>${t.fecha}</td>
+    <td>${t.entrada}${t.salida ? ' → '+t.salida : ''}</td>
+    <td>${t.horas||4}h</td>
+    <td>${badgeTipo(t.tipo)}</td>
+    <td>${t.extras > 0 ? `<span class="badge b-amber">+${t.extras}h ${t.tipoExtras}</span>` : '—'}</td>
+    <td style="font-family:'IBM Plex Mono',monospace;font-size:12px">${montoNorm}${montoExtra}</td>
+    <td>${badgeBoleta(t)}</td>
+    <td style="color:var(--muted);font-size:12px">${t.notas||''}</td>
+    <td><button class="btn-del" onclick="eliminarTurno(${t.id})">Eliminar</button></td>
+  </tr>`;
+}
+
+function tablaCompleta(lista) {
+  if (!lista.length) return '<div class="empty-state">Sin turnos registrados.</div>';
+  return `<div style="overflow-x:auto"><table>
+    <thead><tr>
+      <th>Fecha</th><th>Horario</th><th>Duración</th><th>Tipo</th>
+      <th>Extras</th><th>Monto</th><th>Boleta</th><th>Notas</th><th></th>
+    </tr></thead>
+    <tbody>${lista.map(filaTabla).join('')}</tbody>
+  </table></div>`;
+}
+
+function fmtFecha(d) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+/* --- VISTA DÍA --- */
+function renderDia() {
+  const val = document.getElementById('filtro-dia').value;
+  if (!val) { document.getElementById('vista-dia').innerHTML = '<div class="empty-state">Selecciona una fecha.</div>'; return; }
+  const lista = turnos.filter(t => t.fecha === val);
+  const totH = lista.reduce((s,t)=>s+(t.horas||4),0);
+  const totExt = lista.reduce((s,t)=>s+(t.extras||0),0);
+  const totMonto = lista.reduce((s,t)=>s+calcMonto(t),0);
+  const d = new Date(val+'T12:00:00');
+  const header = `<div class="week-summary">
+    <span>${DIAS[d.getDay()]} ${d.getDate()} de ${MESES[d.getMonth()]} ${d.getFullYear()}</span>
+    <span>${lista.length} turno(s) · ${totH.toFixed(1)}h normales${totExt?' + '+totExt+'h extras':''} · <strong>${pesos(totMonto)}</strong></span>
+  </div><br>`;
+  document.getElementById('vista-dia').innerHTML = header + tablaCompleta(lista);
+}
+
+/* --- VISTA SEMANA --- */
+function getLunes(offset) {
+  const hoy = new Date(); const dia = hoy.getDay();
+  const diff = hoy.getDate() - dia + (dia===0?-6:1) + offset*7;
+  const l = new Date(hoy); l.setDate(diff); l.setHours(0,0,0,0); return l;
+}
+
+function renderSemana() {
+  const lunes = getLunes(semanaOffset);
+  const domingo = new Date(lunes); domingo.setDate(lunes.getDate()+6);
+  document.getElementById('label-semana').textContent =
+    `${lunes.getDate()} ${MESES[lunes.getMonth()]} – ${domingo.getDate()} ${MESES[domingo.getMonth()]} ${domingo.getFullYear()}`;
+  let html = '';
+  let totSemH = 0, totSemExt = 0, totSemMonto = 0;
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(lunes); d.setDate(lunes.getDate()+i);
+    const key = fmtFecha(d);
+    const lista = turnos.filter(t => t.fecha === key);
+    const totH = lista.reduce((s,t)=>s+(t.horas||4),0);
+    const totExt = lista.reduce((s,t)=>s+(t.extras||0),0);
+    const totM = lista.reduce((s,t)=>s+calcMonto(t),0);
+    totSemH += totH; totSemExt += totExt; totSemMonto += totM;
+    html += `<div class="day-group">
+      <div class="day-label">
+        <span>${DIAS[d.getDay()]} ${d.getDate()} de ${MESES[d.getMonth()]}</span>
+        <span>${lista.length} turno(s) · ${totH.toFixed(1)}h${totExt?' + '+totExt+'h extras':''} · ${pesos(totM)}</span>
+      </div>
+      ${lista.length ? tablaCompleta(lista) : '<div style="font-size:13px;color:var(--muted);padding:6px 0 12px">Sin turno registrado</div>'}
+    </div>`;
+  }
+  html += `<div class="week-summary">
+    <span style="font-weight:600">Total semana</span>
+    <span>${totSemH.toFixed(1)}h normales${totSemExt?' · '+totSemExt+'h extras':''} · <strong>${pesos(totSemMonto)}</strong></span>
+  </div>`;
+  document.getElementById('vista-semana').innerHTML = html;
+}
+
+function cambiarSemana(dir) { semanaOffset += dir; renderSemana(); }
+
+/* --- VISTA MES --- */
+function renderMes() {
+  const hoy = new Date();
+  const fecha = new Date(hoy.getFullYear(), hoy.getMonth() + mesOffset, 1);
+  const mesIdx = fecha.getMonth();
+  const añoReal = fecha.getFullYear();
+  document.getElementById('label-mes').textContent = `${MESES[mesIdx]} ${añoReal}`;
+  const prefix = `${añoReal}-${String(mesIdx+1).padStart(2,'0')}`;
+  const delMes = turnos.filter(t => t.fecha.startsWith(prefix));
+  const totH = delMes.reduce((s,t)=>s+(t.horas||4),0);
+  const totExt = delMes.reduce((s,t)=>s+(t.extras||0),0);
+  const totM = delMes.reduce((s,t)=>s+calcMonto(t),0);
+  const diasUnicos = [...new Set(delMes.map(t=>t.fecha))].length;
+
+  const metricsHtml = `<div class="metrics" style="margin-bottom:1rem">
+    <div class="metric"><div class="metric-label">Turnos del mes</div><div class="metric-value">${delMes.length}</div></div>
+    <div class="metric"><div class="metric-label">Horas normales</div><div class="metric-value green">${totH.toFixed(1)}h</div></div>
+    <div class="metric"><div class="metric-label">Horas extras</div><div class="metric-value amber">${totExt}h</div></div>
+    <div class="metric"><div class="metric-label">Total devengado</div><div class="metric-value blue">${pesos(totM)}</div></div>
+  </div>`;
+
+  const primerDia = new Date(añoReal, mesIdx, 1).getDay();
+  const diasEnMes = new Date(añoReal, mesIdx+1, 0).getDate();
+  let cal = '<div class="cal-grid-header">';
+  for (const d of ['D','L','M','X','J','V','S']) cal += `<span>${d}</span>`;
+  cal += '</div><div class="cal-grid">';
+  for (let i = 0; i < primerDia; i++) cal += '<div class="cal-day empty"></div>';
+  for (let d = 1; d <= diasEnMes; d++) {
+    const key = `${prefix}-${String(d).padStart(2,'0')}`;
+    const lista = turnos.filter(t => t.fecha === key);
+    const extrasD = lista.reduce((s,t)=>s+(t.extras||0),0);
+    let cls = 'cal-day';
+    if (lista.length && extrasD) cls += ' has-extras';
+    else if (lista.length) cls += ' has-shift';
+    cal += `<div class="${cls}">${d}${lista.length?`<br><span style="font-size:9px">${lista.length}t</span>`:''}` + `</div>`;
+  }
+  cal += '</div>';
+
+  const leyenda = `<div style="display:flex;gap:12px;margin-top:10px;margin-bottom:1rem;font-size:12px;color:var(--muted)">
+    <span style="display:flex;align-items:center;gap:5px"><span style="width:12px;height:12px;border-radius:3px;background:var(--green-bg);border:1px solid #7dcca0;display:inline-block"></span> Con turno</span>
+    <span style="display:flex;align-items:center;gap:5px"><span style="width:12px;height:12px;border-radius:3px;background:var(--amber-bg);border:1px solid #d4aa50;display:inline-block"></span> Con horas extras</span>
+  </div>`;
+
+  document.getElementById('vista-mes').innerHTML = metricsHtml + cal + leyenda + '<div style="margin-top:1rem">' + tablaCompleta(delMes) + '</div>';
+}
+
+function cambiarMes(dir) { mesOffset += dir; renderMes(); }
+
+/* --- GENERAL --- */
+function renderAll() { renderDia(); renderSemana(); renderMes(); }
+
+function switchTab(tab) {
+  const tabs = ['registrar','dia','semana','mes'];
+  document.querySelectorAll('.tab').forEach((b,i) => b.classList.toggle('active', tabs[i]===tab));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('panel-'+tab).classList.add('active');
+  if (tab==='dia') renderDia();
+  if (tab==='semana') renderSemana();
+  if (tab==='mes') renderMes();
+}
+
+function showToast(msg, error=false) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.background = error ? '#d94040' : 'var(--green)';
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+// Init
+const hoy = new Date();
+document.getElementById('f-fecha').value = fmtFecha(hoy);
+document.getElementById('filtro-dia').value = fmtFecha(hoy);
+document.getElementById('filtro-dia').addEventListener('change', renderDia);
+document.getElementById('cfg-normal').addEventListener('input', actualizarMetricas);
+document.getElementById('cfg-extra-manual').addEventListener('input', actualizarMetricas);
+document.getElementById('f-extras-horas').addEventListener('input', calcularPreviewExtra);
+document.getElementById('f-extras-valor').addEventListener('input', calcularPreviewExtra);
+actualizarMetricas();
+renderSemana();
+</script>
+</body>
+</html>
