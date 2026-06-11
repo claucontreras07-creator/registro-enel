@@ -92,6 +92,13 @@ tr:hover td{background:var(--surface2)}
 .empty-state{text-align:center;padding:2rem 1rem;color:var(--muted);font-size:13px}
 .info-tarifas{background:#f9f7f2;border:1px solid #e8e0cc;border-radius:10px;padding:14px;margin-bottom:0}
 .info-tarifas p{font-size:12px;color:var(--muted);display:flex;gap:20px;flex-wrap:wrap}
+.empresa-toggle{display:flex;gap:6px;margin-bottom:12px}
+.empresa-btn{flex:1;padding:10px 8px;font-size:13px;font-weight:600;font-family:'IBM Plex Sans',sans-serif;border-radius:8px;border:1.5px solid var(--border2);background:var(--surface2);color:var(--muted);cursor:pointer;transition:all 0.15s;display:flex;align-items:center;justify-content:center;gap:7px}
+.empresa-btn.active-enel{background:#e8f5ee;border-color:#00A651;color:#005c2e}
+.empresa-btn.active-gasco{background:#fff3e0;border-color:#e67e00;color:#7a3a00}
+.empresa-btn:not(.active-enel):not(.active-gasco):hover{background:var(--surface);border-color:var(--border2);color:var(--text)}
+.b-enel{background:#e8f5ee;color:#005c2e}
+.b-gasco{background:#fff3e0;color:#7a3a00}
 .toast{position:fixed;top:1.5rem;right:1.5rem;background:var(--green);color:white;padding:12px 18px;border-radius:10px;font-size:13px;font-weight:500;box-shadow:0 4px 16px rgba(0,0,0,0.15);z-index:999;transform:translateY(-10px);opacity:0;transition:all 0.25s;pointer-events:none}
 .toast.show{transform:translateY(0);opacity:1}
 .btn-export{background:var(--surface);color:var(--text);border:1px solid var(--border2);padding:10px 18px;border-radius:8px;font-size:13px;font-weight:600;font-family:'IBM Plex Sans',sans-serif;cursor:pointer;display:inline-flex;align-items:center;gap:7px;transition:all 0.15s}
@@ -177,6 +184,11 @@ tr:hover td{background:var(--surface2)}
     <!-- Formulario turno -->
     <div class="card">
       <div class="card-title">Nuevo turno</div>
+
+      <div class="empresa-toggle">
+        <button class="empresa-btn active-enel" id="btn-enel" onclick="setEmpresa('enel')">⚡ Enel</button>
+        <button class="empresa-btn" id="btn-gasco" onclick="setEmpresa('gasco')">🔥 Gasco</button>
+      </div>
 
       <div class="form-grid">
         <div class="form-group">
@@ -381,6 +393,13 @@ const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto'
 let turnos = JSON.parse(localStorage.getItem('enel_turnos_v2') || '[]');
 let semanaOffset = 0;
 let mesOffset = 0;
+let empresaActual = 'enel';
+
+function setEmpresa(emp) {
+  empresaActual = emp;
+  document.getElementById('btn-enel').className = 'empresa-btn' + (emp==='enel' ? ' active-enel' : '');
+  document.getElementById('btn-gasco').className = 'empresa-btn' + (emp==='gasco' ? ' active-gasco' : '');
+}
 
 function guardarLS() { localStorage.setItem('enel_turnos_v2', JSON.stringify(turnos)); }
 
@@ -443,6 +462,7 @@ function guardarTurno() {
   const turno = {
     id: Date.now(),
     fecha, entrada, salida, horas,
+    empresa: empresaActual,
     tipo: document.getElementById('f-tipo').value,
     extras: extrasHoras,
     tipoExtras: conExtras ? document.getElementById('f-extras-tipo').value : '',
@@ -513,8 +533,12 @@ function filaTabla(t) {
   const valorExt = t.valorExtra > 0 ? t.valorExtra : cfg.extra;
   const montoNorm = pesos((t.horas||4) * cfg.normal);
   const montoExtra = t.extras > 0 ? ` +${pesos(t.extras * valorExt)}` : '';
+  const empBadge = t.empresa === 'gasco'
+    ? `<span class="badge b-gasco">🔥 Gasco</span>`
+    : `<span class="badge b-enel">⚡ Enel</span>`;
   return `<tr>
     <td>${t.fecha}</td>
+    <td>${empBadge}</td>
     <td>${t.entrada}${t.salida ? ' → '+t.salida : ''}</td>
     <td>${t.horas||4}h</td>
     <td>${badgeTipo(t.tipo)}</td>
@@ -530,7 +554,7 @@ function tablaCompleta(lista) {
   if (!lista.length) return '<div class="empty-state">Sin turnos registrados.</div>';
   return `<div style="overflow-x:auto"><table>
     <thead><tr>
-      <th>Fecha</th><th>Horario</th><th>Duración</th><th>Tipo</th>
+      <th>Fecha</th><th>Empresa</th><th>Horario</th><th>Duración</th><th>Tipo</th>
       <th>Extras</th><th>Monto</th><th>Boleta</th><th>Notas</th><th></th>
     </tr></thead>
     <tbody>${lista.map(filaTabla).join('')}</tbody>
